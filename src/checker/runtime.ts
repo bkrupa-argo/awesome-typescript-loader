@@ -14,11 +14,13 @@ import {
 	RemoveFile,
 	Files,
 	MessageType,
-	TsConfig
+	TsConfig,
+	EmitDeclaration
 } from './protocol'
 
 import { CaseInsensitiveMap } from './fs'
 import { isCaseInsensitive } from '../helpers'
+import { OutputFile } from '../interfaces'
 
 const caseInsensitive = isCaseInsensitive()
 
@@ -406,7 +408,7 @@ function createChecker(receive: (cb: (msg: Req) => void) => void, send: (msg: Re
 		return outputFiles
 	}
 
-	function emit(fileName: string) {
+	function emit(fileName: string): OutputFile {
 		if (loaderConfig.useTranspileModule || loaderConfig.transpileOnly) {
 			return fastEmit(fileName)
 		} else {
@@ -451,6 +453,11 @@ function createChecker(receive: (cb: (msg: Req) => void) => void, send: (msg: Re
 		const deps = program.getAllDependencies(sourceFile)
 
 		replyOk(seq, { emitResult, deps })
+	}
+
+	function processEmitDeclaration({ seq, payload }: EmitDeclaration.Request) {
+		const emitResult = emit(payload.fileName)
+		replyOk(seq, emitResult.declaration)
 	}
 
 	function processFiles({ seq }: Files.Request) {
@@ -606,6 +613,9 @@ function createChecker(receive: (cb: (msg: Req) => void) => void, send: (msg: Re
 					break
 				case MessageType.Files:
 					processFiles(req)
+					break
+				case MessageType.EmitDeclaration:
+					processEmitDeclaration(req)
 					break
 			}
 		} catch (e) {

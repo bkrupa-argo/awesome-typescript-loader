@@ -475,6 +475,13 @@ function setupAfterCompile(compiler, instanceName, forkChecker = false) {
 			Array.prototype.push.apply(compilation.fileDependencies, normalized)
 		})
 
+		compilation.fileDependencies.forEach(file => {
+			instance.checker.emitDeclaration(file).then(declaration => {
+				mkdirp.sync(path.dirname(declaration.name))
+				fs.writeFileSync(declaration.name, declaration.text)
+			})
+		})
+
 		const timeStart = +new Date()
 		const diag = () =>
 			instance.loaderConfig.transpileOnly
